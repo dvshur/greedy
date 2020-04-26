@@ -1,4 +1,3 @@
-// use fs::File;
 use once_cell::sync::OnceCell;
 use regex::Regex;
 use std::{
@@ -29,7 +28,12 @@ static REGEX_LIM_MEM_CPU: OnceCell<Regex> = OnceCell::new();
 static REGEX_NUMERIC_PREFIX: OnceCell<Regex> = OnceCell::new();
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let current_dir = env::current_dir()?;
+    let dir = match env::args().skip(1).next() {
+        Some(dir) => PathBuf::from(dir),
+        None => env::current_dir()?,
+    };
+
+    println!("Analyzing kubernetes configs in {:?}", dir);
 
     REGEX_REQ_CPU_MEM
         .set(Regex::new(
@@ -57,7 +61,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     REGEX_NUMERIC_PREFIX.set(Regex::new("^([0-9]+)")?).unwrap();
 
-    let resources: Resources = find_yamls(&current_dir)?
+    let resources: Resources = find_yamls(&dir)?
         .iter()
         .map(|p| fs::read_to_string(p))
         .filter_map(|r| r.ok())
